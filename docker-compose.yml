@@ -1,0 +1,39 @@
+# Runs MySQL + the API on your own computer, in containers.
+#   docker compose up --build      start everything (Ctrl+C to stop)
+#   docker compose down            remove the containers (data is kept)
+#   docker compose down -v         remove the containers AND the database data
+# The API is then at http://localhost:3000 (the frontend's `npm run dev` uses it).
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: localdev123
+      MYSQL_DATABASE: taskmanager
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-plocaldev123"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build: .
+    init: true
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: localdev123
+      DB_NAME: taskmanager
+      DB_SSL: "false"
+      CORS_ORIGIN: ""
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
